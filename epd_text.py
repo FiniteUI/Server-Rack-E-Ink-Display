@@ -89,7 +89,7 @@ class epd_text:
 
         #draw initial image
         self.new_image()
-        self.write_text('**E INK DISPLAY IS INITIALIZED**', center=True)
+        self.write_text('***E INK DISPLAY IS INITIALIZED***', center=True)
         self.draw()
 
     def new_image(self):
@@ -115,14 +115,14 @@ class epd_text:
         logging.debug(f'Writing text [{text}] at position [{position}] to line [{line}]...')
         self.image_draw.text((position, self.line_positions[line]), text, font=font)
 
-    def write_text(self, text, position=(0,0), center=False):
+    def write_text(self, text, position=(0,0), center=False, font=None):
         #write text to screen directly
         position = (position[0] + self.margin_x, position[1])
         if center:
             position = get_text_center_position(text)
         
         logging.debug(f'Writing text [{text}] at position [{position}]...')
-        self.image_draw.text(position, text)
+        self.image_draw.text(position, text, font=font)
 
     def clear(self):
         logging.debug('Clearing E-Ink Display...')
