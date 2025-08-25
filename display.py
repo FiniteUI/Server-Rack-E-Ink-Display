@@ -20,12 +20,19 @@ def get_shell_return(command, ssh=False, ssh_user=None, ssh_host=None, ssh_key=N
 def display_server_details(display, host, user, index=None):
     logging.info(f'Generating display for host: {host}')
 
-    ssh_ip = socket.gethostbyname(f'{host}.local')
-    logging.info(f'IP for host {host}: {ssh_ip}')
+    if host == socket.gethostname():
+        ssh = False
+        user = None
+        ssh_ip = None
+        ssh_key = None
+    else:
+        ssh = True
+        ssh_ip = socket.gethostbyname(f'{host}.local')
+        logging.info(f'IP for host {host}: {ssh_ip}')
 
-    #get path to key file from relative path
-    ssh_key = os.path.join(os.path.dirname(os.path.realpath(__file__)), CONFIG['ssh_key'])
-    logging.info(f'SSH Key File: {ssh_key}')
+        #get path to key file from relative path
+        ssh_key = os.path.join(os.path.dirname(os.path.realpath(__file__)), CONFIG['ssh_key'])
+        logging.info(f'SSH Key File: {ssh_key}')
 
     display.new_image()
 
@@ -38,29 +45,29 @@ def display_server_details(display, host, user, index=None):
         display.set_line_text(current_line, f'{index + 1} / {SERVER_COUNT}', right_justify=True, font=FONT)
 
     # #now the host name
-    value = get_shell_return(RSYSINFO.HOSTNAME, ssh=True, ssh_user=user, ssh_host=ssh_ip, ssh_key=ssh_key)
-    value2 = get_shell_return(RSYSINFO.IP_ADDRESS, ssh=True, ssh_user=user, ssh_host=ssh_ip, ssh_key=ssh_key)
+    value = get_shell_return(RSYSINFO.HOSTNAME, ssh=ssh, ssh_user=user, ssh_host=ssh_ip, ssh_key=ssh_key)
+    value2 = get_shell_return(RSYSINFO.IP_ADDRESS, ssh=ssh, ssh_user=user, ssh_host=ssh_ip, ssh_key=ssh_key)
     display.set_line_text(current_line := current_line+1, f'Host: {value}  -  {value2}', font=FONT)
 
     #system / model
-    value = get_shell_return(RSYSINFO.MODEL, ssh=True, ssh_user=user, ssh_host=ssh_ip, ssh_key=ssh_key)
+    value = get_shell_return(RSYSINFO.MODEL, ssh=ssh, ssh_user=user, ssh_host=ssh_ip, ssh_key=ssh_key)
     display.set_line_text(current_line := current_line+1, f'System: {value}', font=FONT)
 
     #operating system
-    value = get_shell_return(RSYSINFO.OPERATING_SYSTEM, ssh=True, ssh_user=user, ssh_host=ssh_ip, ssh_key=ssh_key)
+    value = get_shell_return(RSYSINFO.OPERATING_SYSTEM, ssh=ssh, ssh_user=user, ssh_host=ssh_ip, ssh_key=ssh_key)
     display.set_line_text(current_line := current_line+1, f'OS: {value}', font=FONT)
 
     #cpu
-    value = get_shell_return(RSYSINFO.CPU_MODEL, ssh=True, ssh_user=user, ssh_host=ssh_ip, ssh_key=ssh_key)
-    value2 = get_shell_return(RSYSINFO.ARCHITECTURE, ssh=True, ssh_user=user, ssh_host=ssh_ip, ssh_key=ssh_key)
-    value3 = get_shell_return(RSYSINFO.CPU_LOAD, ssh=True, ssh_user=user, ssh_host=ssh_ip, ssh_key=ssh_key)
-    value4 = get_shell_return(RSYSINFO.CPU_TEMPERATURE, ssh=True, ssh_user=user, ssh_host=ssh_ip, ssh_key=ssh_key)
+    value = get_shell_return(RSYSINFO.CPU_MODEL, ssh=ssh, ssh_user=user, ssh_host=ssh_ip, ssh_key=ssh_key)
+    value2 = get_shell_return(RSYSINFO.ARCHITECTURE, ssh=ssh, ssh_user=user, ssh_host=ssh_ip, ssh_key=ssh_key)
+    value3 = get_shell_return(RSYSINFO.CPU_LOAD, ssh=ssh, ssh_user=user, ssh_host=ssh_ip, ssh_key=ssh_key)
+    value4 = get_shell_return(RSYSINFO.CPU_TEMPERATURE, ssh=ssh, ssh_user=user, ssh_host=ssh_ip, ssh_key=ssh_key)
     value4 = round(int(value4) / 1000)
     display.set_line_text(current_line := current_line+1, f'CPU: {value} ({value2}),  {value3}%,  {value4}°C', font=FONT)
 
     #total memory
-    value = get_shell_return(RSYSINFO.MEMORY, ssh=True, ssh_user=user, ssh_host=ssh_ip, ssh_key=ssh_key)
-    value2 = get_shell_return(RSYSINFO.USED_MEMORY_PERCENTAGE, ssh=True, ssh_user=user, ssh_host=ssh_ip, ssh_key=ssh_key)
+    value = get_shell_return(RSYSINFO.MEMORY, ssh=ssh, ssh_user=user, ssh_host=ssh_ip, ssh_key=ssh_key)
+    value2 = get_shell_return(RSYSINFO.USED_MEMORY_PERCENTAGE, ssh=ssh, ssh_user=user, ssh_host=ssh_ip, ssh_key=ssh_key)
     value2 = round(float(value2))
     display.set_line_text(current_line := current_line+1, f'Memory: {value}MB,  {value2}%', font=FONT)
 
