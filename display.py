@@ -31,15 +31,25 @@ def get_server_details(host, user):
 
     details = {'host': host}
 
-    #get IP, check if accessible
+    ip = None
     try:
-        ip = socket.gethostbyname(f'{host}.local')
+        ip = socket.gethostbyname(host)
+    except socket.gaierror as e:
+        logging.warning(e)
+    
+    if ip is None:
+        try:
+            ip = socket.gethostbyname(f'{host}.local')
+        except socket.gaierror as e:
+            logging.warning(e)
+    
+    if ip is None:
+        accessible = False
+        logging.warning(f'Host {host} inaccessible.')
+    else:
+        accessible = True
         logging.info(f'IP for host {host}: {ip}')
         details['ip'] = ip
-        accessible = True
-    except socket.gaierror as e:
-        logging.info(e)
-        accessible = False
 
     #if accessible, grab details
     details['accessible'] = accessible
@@ -153,11 +163,10 @@ def initialization():
     global FONT
 
     #check config file
-    config_file = 'config.yaml'
+    config_file = '.data/config.yaml'
     DOCKER = os.getenv('DOCKER')
     if DOCKER:
         logging.info('Running on docker...')
-        config_file = '.data/config.yaml'
 
     if not os.path.isfile(config_file):
         logging.error(f'Could not find config file [{config_file}].')
@@ -234,12 +243,16 @@ def process_loop():
 
         #now that we're done with the loop, print an overview page
         display_overview_page(display, SERVER_COUNT, accessible, temperatures, cpu_loads, memory_usage)
-        logging.info('Wating - ' + str(CONFIG['display_time']) + 's')
-        time.sleep(CONFIG['display_time'])
 
 if __name__ == '__main__':
     logging.basicConfig(level=logging.DEBUG)
     logging.info('Process starting...')
+
+    #NETWORK ACCESS CHECK
+    try:
+        logging.debug(f'NETWORK TEST: {socket.gethostbyname('rpi02w.local')}')
+    except socket.gaierror as e:
+        logging.debug(e)
 
     valid = initialization()
     if not valid:

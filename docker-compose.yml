@@ -1,0 +1,18 @@
+name: server-rack-display
+
+services:
+  server-rack-display:
+    privileged: true
+    container_name: "server-rack-display"
+    build:
+      context: .
+      dockerfile: Dockerfile.dockerfile
+    restart: unless-stopped
+    volumes:
+      - type: bind
+        source: ./.data
+        target: /app/.data
+    network_mode: "host"
+    extends:
+      file: .data/extra_hosts.yml
+      service: server-rack-display
