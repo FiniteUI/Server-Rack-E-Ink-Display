@@ -3,3 +3,5 @@ config.yaml
 /fonts
 /ssh
 __pycache__
+/.data
+/lgpio

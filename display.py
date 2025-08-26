@@ -8,6 +8,14 @@ import socket
 import os
 from PIL import ImageFont
 from cache_file import CacheFile
+import sys
+
+CONFIG = None
+DOCKER = None
+SERVER_COUNT = None
+SERVERS = None
+CACHE = None
+FONT = None
 
 def get_shell_return(command, ssh=False, ssh_user=None, ssh_host=None, ssh_key=None):
     if ssh:
@@ -111,7 +119,7 @@ def display_server_details(display, details: dict, index=None):
     if not details['accessible']:
         display.write_text(f"***HOST {details['host']} OFFLINE***", font=FONT, center=True)
     else:
-        display.set_line_text(current_line := current_line+1, f"Host: {details['host']} ({details['ip']})  -  ONLINE", font=FONT)
+        display.set_line_text(current_line := current_line+1, f"Host: {details['host']} ({details['ip']})", font=FONT)
         display.set_line_text(current_line := current_line+1, f"System: {details['system']}", font=FONT)
         display.set_line_text(current_line := current_line+1, f"OS: {details['operating_system']}", font=FONT)
         display.set_line_text(current_line := current_line+1, f"CPU: {details['cpu_model']} ({details['architecture']}),  {details['cpu_load']}%,  {details['cpu_temp']}°C", font=FONT)
@@ -140,33 +148,50 @@ def display_overview_page(display, servers, accessible, temperatures: list, cpu_
 
     display.draw()
 
-if __name__ == '__main__':
-    logging.basicConfig(level=logging.DEBUG)
-    logging.info('Process starting...')
+def initialization():
+    global CONFIG
+    global FONT
 
-    #load config file
-    logging.debug('Loading config.yaml...')
-    CONFIG = yaml.safe_load(open('config.yaml'))
+    #check config file
+    config_file = 'config.yaml'
+    DOCKER = os.getenv('DOCKER')
+    if DOCKER:
+        logging.info('Running on docker...')
+        config_file = '.data/config.yaml'
 
-    SERVER_COUNT = len(CONFIG['servers'])
-    SERVERS = CONFIG['servers']
-    logging.debug(f'Server Count: {SERVER_COUNT}')
-    logging.debug(f'Servers: {SERVERS}')
-    logging.debug('Servers: ' + str(CONFIG['display_time']))
-    logging.debug('Servers: ' + CONFIG['display_title'])
+    if not os.path.isfile(config_file):
+        logging.error(f'Could not find config file [{config_file}].')
+        return False
 
-    #load cache file
-    CACHE = CacheFile()
-    logging.debug(f'Cache File: {CACHE.getFilePath()}')
+    CONFIG = yaml.safe_load(open(config_file))
+    logging.info(f'Config file: [{config_file}]')
+    logging.debug(f'Config: {CONFIG}') 
 
+    #check ssh key
+    if 'ssh_key' not in CONFIG:
+        logging.error(f'Missing config ssh_key.')
+        return False
+
+    ssh_key = os.path.join(os.path.dirname(os.path.realpath(__file__)), CONFIG['ssh_key'])
+    if not os.path.isfile(ssh_key):
+        logging.error(f'Invalid ssh_key file: [{ssh_key}]')
+        return False
+    
+    logging.info(f'SSH Key File: {ssh_key}')
+    
     #load font
     if CONFIG.get('font_file'):
         font_file = os.path.join(os.path.dirname(os.path.realpath(__file__)), CONFIG['font_file'])
-        logging.debug(f"Loading font file [{font_file}]")
-        FONT = ImageFont.truetype(font_file, CONFIG['font_size'])
-    else:
-        FONT = None
+        if not os.path.isfile(font_file):
+            logging.error(f'Invalid ssh_key file: [{ssh_key}]')
+            return False
 
+        logging.info(f"Loading font file [{font_file}]")
+        FONT = ImageFont.truetype(font_file, CONFIG.get('font_size'))
+
+    return True
+
+def process_loop():
     #initialize display
     display = epd_text(CONFIG['line_count'], margin_x=1, margin_y=1)
 
@@ -175,7 +200,6 @@ if __name__ == '__main__':
     while True:
         logging.info('Starting process loop...')
         
-
         accessible = 0
         temperatures = []
         cpu_loads = []
@@ -205,7 +229,33 @@ if __name__ == '__main__':
             #display
             display_server_details(display, details, index=i)
         
+        logging.info('Wating - ' + str(CONFIG['display_time']) + 's')
+        time.sleep(CONFIG['display_time'])
+
         #now that we're done with the loop, print an overview page
         display_overview_page(display, SERVER_COUNT, accessible, temperatures, cpu_loads, memory_usage)
         logging.info('Wating - ' + str(CONFIG['display_time']) + 's')
         time.sleep(CONFIG['display_time'])
+
+if __name__ == '__main__':
+    logging.basicConfig(level=logging.DEBUG)
+    logging.info('Process starting...')
+
+    valid = initialization()
+    if not valid:
+        logging.error('Failed to initialize. Exiting...')
+        sys.exit()
+
+    SERVER_COUNT = len(CONFIG['servers'])
+    SERVERS = CONFIG['servers']
+    logging.debug(f'Server Count: {SERVER_COUNT}')
+    logging.debug(f'Servers: {SERVERS}')
+    logging.debug('Display Time: ' + str(CONFIG['display_time']))
+    logging.debug('Display Title: ' + CONFIG['display_title'])
+
+    #load cache file
+    CACHE = CacheFile()
+    logging.debug(f'Cache File: {CACHE.getFilePath()}')
+
+    #run
+    process_loop()
