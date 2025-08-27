@@ -6,7 +6,6 @@ import subprocess
 import time
 import socket
 import os
-from PIL import ImageFont
 from cache_file import CacheFile
 import sys
 
@@ -15,7 +14,6 @@ DOCKER = None
 SERVER_COUNT = None
 SERVERS = None
 CACHE = None
-FONT = None
 
 def get_shell_return(command, ssh=False, ssh_user=None, ssh_host=None, ssh_key=None):
     if ssh:
@@ -121,22 +119,22 @@ def display_server_details(display, details: dict, index=None):
     current_line = -1
 
     #first the display title
-    display.set_line_text(current_line := current_line+1, CONFIG['display_title'], center=True, font=FONT)
+    display.set_line_text(current_line := current_line+1, CONFIG['display_title'], center=True)
     #also display the counter
     if index is not None:
-        display.set_line_text(current_line, f'{index + 1} / {SERVER_COUNT}', right_justify=True, font=FONT)
+        display.set_line_text(current_line, f'{index + 1} / {SERVER_COUNT}', right_justify=True)
 
     if not details['accessible']:
-        display.write_text(f"***HOST {details['host']} OFFLINE***", font=FONT, center=True)
+        display.write_text(f"***HOST {details['host']} OFFLINE***", center=True)
     else:
-        display.set_line_text(current_line := current_line+1, f"Host: {details['host']} ({details['ip']})", font=FONT)
-        display.set_line_text(current_line := current_line+1, f"System: {details['system']}", font=FONT)
-        display.set_line_text(current_line := current_line+1, f"OS: {details['operating_system']}", font=FONT)
-        display.set_line_text(current_line := current_line+1, f"CPU: {details['cpu_model']} ({details['architecture']}),  {details['cpu_load']}%,  {details['cpu_temp']}°C", font=FONT)
-        display.set_line_text(current_line := current_line+1, f"Memory: {details['memory']}MB,  {details['used_memory']}%", font=FONT)
+        display.set_line_text(current_line := current_line+1, f"Host: {details['host']} ({details['ip']})")
+        display.set_line_text(current_line := current_line+1, f"System: {details['system']}")
+        display.set_line_text(current_line := current_line+1, f"OS: {details['operating_system']}")
+        display.set_line_text(current_line := current_line+1, f"CPU: {details['cpu_model']} ({details['architecture']}),  {details['cpu_load']}%,  {details['cpu_temp']}°C")
+        display.set_line_text(current_line := current_line+1, f"Memory: {details['memory']}MB,  {details['used_memory']}%")
 
     #now update
-    display.draw()
+    display.update()
 
 def display_overview_page(display, servers, accessible, temperatures: list, cpu_loads: list, memory_usages: list):
     logging.info('Display summary page...')
@@ -149,14 +147,14 @@ def display_overview_page(display, servers, accessible, temperatures: list, cpu_
 
     #display
     current_line = -1
-    display.set_line_text(current_line := current_line+1, CONFIG['display_title'], center=True, font=FONT)
-    display.set_line_text(current_line := current_line+1, "Summary", center=True, font=FONT)
-    display.set_line_text(current_line := current_line+1, f"Servers Up: {accessible} / {servers}", center=True, font=FONT)
-    display.set_line_text(current_line := current_line+1, f"Avg. CPU Load: {average_cpu_load}%", center=True, font=FONT)
-    display.set_line_text(current_line := current_line+1, f"Avg. CPU Temp: {average_temperature}°C", center=True, font=FONT)
-    display.set_line_text(current_line := current_line+1, f"Avg. Memory Usage: {average_memory_usage}%", center=True, font=FONT)
+    display.set_line_text(current_line := current_line+1, CONFIG['display_title'], center=True)
+    display.set_line_text(current_line := current_line+1, "Summary", center=True)
+    display.set_line_text(current_line := current_line+1, f"Servers Up: {accessible} / {servers}", center=True)
+    display.set_line_text(current_line := current_line+1, f"Avg. CPU Load: {average_cpu_load}%", center=True)
+    display.set_line_text(current_line := current_line+1, f"Avg. CPU Temp: {average_temperature}°C", center=True)
+    display.set_line_text(current_line := current_line+1, f"Avg. Memory Usage: {average_memory_usage}%", center=True)
 
-    display.draw()
+    display.update()
 
 def initialization():
     global CONFIG
@@ -192,17 +190,15 @@ def initialization():
     if CONFIG.get('font_file'):
         font_file = os.path.join(os.path.dirname(os.path.realpath(__file__)), CONFIG['font_file'])
         if not os.path.isfile(font_file):
-            logging.error(f'Invalid ssh_key file: [{ssh_key}]')
+            logging.error(f'Invalid font_file file in config: [{font_file}]')
             return False
-
-        logging.info(f"Loading font file [{font_file}]")
-        FONT = ImageFont.truetype(font_file, CONFIG.get('font_size'))
+        CONFIG['full_font_file'] = font_file
 
     return True
 
 def process_loop():
     #initialize display
-    display = epd_text(CONFIG['line_count'], margin_x=1, margin_y=1)
+    display = epd_text(CONFIG['line_count'], margin_x=1, margin_y=1, font_file=CONFIG.get('full_font_file'), font_size=CONFIG.get('font_size'))
 
     #process loop
     first_run = True
@@ -247,12 +243,6 @@ def process_loop():
 if __name__ == '__main__':
     logging.basicConfig(level=logging.DEBUG)
     logging.info('Process starting...')
-
-    #NETWORK ACCESS CHECK
-    try:
-        logging.debug(f'NETWORK TEST: {socket.gethostbyname('rpi02w.local')}')
-    except socket.gaierror as e:
-        logging.debug(e)
 
     valid = initialization()
     if not valid:
