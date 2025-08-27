@@ -91,7 +91,6 @@ class epd_text:
         
         #self.epd.init()
         self.epd.init_fast()
-        #self.clear()
         
         #draw initial image
         self.new_image()
@@ -137,7 +136,7 @@ class epd_text:
 
     def clear(self):
         logging.debug('Clearing E-Ink Display...')
-        self.epd.Clear()
+        self.epd.Clear(0xFF)
 
     def update(self, partial=False, base=False):
         logging.debug('Updating E-Ink Display...')
@@ -148,8 +147,8 @@ class epd_text:
             if base:
                 self.epd.displayPartBaseImage(self.epd.getbuffer(self.image))
             else:
+                #self.epd.display(self.epd.getbuffer(self.image))
                 self.epd.display_fast(self.epd.getbuffer(self.image))
-                self.epd.display(self.epd.getbuffer(self.image))
             
     def show_line_test_page(self):
         self.new_image()

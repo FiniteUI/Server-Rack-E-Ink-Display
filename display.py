@@ -127,11 +127,11 @@ def display_server_details(display, details: dict, index=None):
     if not details['accessible']:
         display.write_text(f"***HOST {details['host']} OFFLINE***", center=True)
     else:
-        display.set_line_text(current_line := current_line+1, f"Host: {details['host']} ({details['ip']})")
-        display.set_line_text(current_line := current_line+1, f"System: {details['system']}")
-        display.set_line_text(current_line := current_line+1, f"OS: {details['operating_system']}")
-        display.set_line_text(current_line := current_line+1, f"CPU: {details['cpu_model']} ({details['architecture']}),  {details['cpu_load']}%,  {details['cpu_temp']}°C")
-        display.set_line_text(current_line := current_line+1, f"Memory: {details['memory']}MB,  {details['used_memory']}%")
+        display.set_line_text(current_line := current_line+1, f"{details['host']} ({details['ip']})", center=True)
+        display.set_line_text(current_line := current_line+1, f"{details['system']}", center=True)
+        display.set_line_text(current_line := current_line+1, f"{details['operating_system']}", center=True)
+        display.set_line_text(current_line := current_line+1, f"CPU: {details['cpu_model']} ({details['architecture']}),  {details['cpu_load']}%,  {details['cpu_temp']}°C", center=True)
+        display.set_line_text(current_line := current_line+1, f"Memory: {details['memory']}MB,  {details['used_memory']}%", center=True)
 
     #now update
     display.update()
