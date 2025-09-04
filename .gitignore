@@ -3,5 +3,7 @@ config.yaml
 /fonts
 /ssh
 __pycache__
-/.data
 /lgpio
+.data/display_id_rsa
+*.ttc
+.data/extra_hosts.yml

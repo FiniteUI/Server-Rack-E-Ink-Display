@@ -1,0 +1,23 @@
+line_count: 6
+font_size: 13
+font_file: '.data/epd_font.ttc'
+display_title: '--Seddon Server Status--'
+display_time: 10
+servers:
+  - host: rpi02w
+    user: rpi02w 
+  - host: rpi02w-2
+    user: pi
+  - host: rpi02w-3
+    user: pi
+  - host: rpi02w-4
+    user: pi
+  - host: rpi3
+    user: rpi3
+  - host: rpi0w
+    user: rpi0w
+  - host: rpi5
+    user: pi
+  - host: rpi5-2
+    user: pi
+ssh_key: '.data/display_id_rsa'
