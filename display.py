@@ -20,14 +20,29 @@ def get_shell_return(command, ssh=False, ssh_user=None, ssh_host=None, ssh_key=N
         command = f'ssh -o StrictHostKeyChecking=no -i {ssh_key} {ssh_user}@{ssh_host} {command}'
 
     logging.info(f'Running shell command: {command}')
-    result = subprocess.check_output(command, shell=True).decode().strip()
+    try:
+        result = subprocess.check_output(command, shell=True).decode().strip()
+    except subprocess.CalledProcessError as e:
+        logging.warning(e)
+        result = None
+
     logging.debug(f'Shell command return: {result}')
     return result
 
 def get_server_details(host, user):
     logging.info(f'Grabbing data for host: {host}')
-
     details = {'host': host}
+
+    #use ssh unless it's local
+    if host == socket.gethostname():
+        ssh = False
+        ssh_key = None
+    else:
+        ssh = True
+
+        #get path to key file from relative path
+        ssh_key = os.path.join(os.path.dirname(os.path.realpath(__file__)), CONFIG['ssh_key'])
+        logging.info(f'SSH Key File: {ssh_key}')
 
     ip = None
     try:
@@ -40,7 +55,7 @@ def get_server_details(host, user):
             ip = socket.gethostbyname(f'{host}.local')
         except socket.gaierror as e:
             logging.warning(e)
-    
+
     if ip is None:
         accessible = False
         logging.warning(f'Host {host} inaccessible.')
@@ -49,20 +64,16 @@ def get_server_details(host, user):
         logging.info(f'IP for host {host}: {ip}')
         details['ip'] = ip
 
+    #on docker we can get past this for some reason, so we do an extra check here
+    if accessible:
+        temp = get_shell_return(RSYSINFO.WORKING_DIRECTORY, ssh=ssh, ssh_user=user, ssh_host=ip, ssh_key=ssh_key)
+        if temp is None:
+            accessible = False
+            logging.warning(f'Host {host} inaccessible.')
+    
     #if accessible, grab details
     details['accessible'] = accessible
     if accessible:
-        #use ssh unless it's local
-        if host == socket.gethostname():
-            ssh = False
-            ssh_key = None
-        else:
-            ssh = True
-
-            #get path to key file from relative path
-            ssh_key = os.path.join(os.path.dirname(os.path.realpath(__file__)), CONFIG['ssh_key'])
-            logging.info(f'SSH Key File: {ssh_key}')
-
         temp = CACHE.getValue(f'{host}-system')
         if temp is None:
             temp = get_shell_return(RSYSINFO.MODEL, ssh=ssh, ssh_user=user, ssh_host=ip, ssh_key=ssh_key)
